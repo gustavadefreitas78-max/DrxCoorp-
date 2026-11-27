@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Drx</title>
+<style>
+:root{--bg:#faf9f5;--sf:#fff;--tx:#1f1e1d;--mu:#73726c;--bd:#e5e3da;--ac:#c96442;--hv:#f0eee6;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#262624;--sf:#30302e;--tx:#f0eee6;--mu:#a09f97;--bd:#43423e;--hv:#3a3936;color-scheme:dark}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,-apple-system,sans-serif;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--bd);background:var(--sf);border-radius:10px;padding:8px 14px}
+button.p{background:var(--ac);border-color:var(--ac);color:#fff}
+input,select,textarea{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;width:100%}
+h1,h2{font-family:Georgia,serif;font-weight:500;margin:0}
+.hide{display:none!important}
+#auth{height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.card h1{font-size:34px}.mu{color:var(--mu);font-size:14px}
+#app{height:100%;display:flex;padding-top:env(safe-area-inset-top)}
+aside{width:280px;background:var(--hv);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:12px;gap:8px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+#convs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.cv{padding:8px 10px;border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.cv:hover,.cv.on{background:var(--bd)}
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bd)}
+header .sp{flex:1}#menu{display:none}
+#msgs{flex:1;overflow:auto;padding:20px 14px}
+.in{max-width:760px;margin:0 auto}
+.m{margin:0 0 18px;white-space:pre-wrap;word-wrap:break-word}
+.m.u{background:var(--hv);padding:10px 14px;border-radius:14px;width:fit-content;max-width:90%;margin-left:auto}
+.m pre{background:var(--hv);padding:10px;border-radius:8px;overflow:auto;white-space:pre}
+.empty{text-align:center;margin-top:18vh}.empty h1{font-size:30px}
+#box{padding:8px 14px calc(12px + env(safe-area-inset-bottom))}
+#box .in{display:flex;gap:8px;align-items:flex-end;background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:8px}
+#box textarea{border:0;resize:none;max-height:160px;background:transparent;padding:6px 8px}
+#adm{position:fixed;inset:0;background:var(--bg);z-index:30;overflow:auto;padding:calc(14px + env(safe-area-inset-top)) 14px 40px}
+#adm .in{display:flex;flex-direction:column;gap:12px}
+.tabs{display:flex;gap:8px}.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.row{display:flex;gap:8px;align-items:center;background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;flex-wrap:wrap}
+.row b{flex:1;min-width:140px;word-break:break-all;font-weight:500}.row input{width:110px}
+@media(max-width:760px){
+ aside{position:fixed;inset:0 auto 0 0;z-index:20;transform:translateX(-100%);transition:.2s;box-shadow:2px 0 12px #0004}
+ aside.open{transform:none}#menu{display:block}}
+</style></head><body>
+
+<section id="auth"><div class="card">
+ <h1>Drx</h1><div class="mu">Sua IA completa. Entre ou crie uma conta.</div>
+ <input id="em" type="email" placeholder="E-mail" autocomplete="email">
+ <input id="pw" type="password" placeholder="Senha (mín. 6 caracteres)" autocomplete="current-password">
+ <button class="p" id="login">Entrar</button><button id="signup">Criar conta</button>
+ <div class="mu" id="amsg"></div>
+</div></section>
+
+<section id="app" class="hide">
+ <aside id="side"><button class="p" id="new">+ Nova conversa</button><div id="convs"></div>
+  <button id="admbtn" class="hide">Painel admin</button>
+  <div class="mu" id="who"></div><button id="out">Sair</button></aside>
+ <main><header><button id="menu">☰</button><b>Drx</b><span class="sp"></span><span class="mu" id="tk"></span></header>
+  <div id="msgs"><div class="in" id="list"></div></div>
+  <div id="box"><div class="in" style="flex-wrap:wrap"><div id="chip" class="mu hide" style="width:100%;cursor:pointer"></div><button id="clip" title="Anexar foto ou PDF">📎</button><button id="img" title="Criar ou editar imagem">🎨</button><input type="file" id="fi" accept="image/*,application/pdf" class="hide"><textarea id="txt" rows="1" placeholder="Pergunte, envie um link ou anexe uma foto" style="flex:1;min-width:0;width:auto"></textarea><button class="p" id="send">Enviar</button></div></div>
+ </main>
+</section>
+
+<section id="adm" class="hide"><div class="in">
+ <div class="row"><h2 style="flex:1">Painel admin</h2><button id="admx">Fechar</button></div>
+ <div class="tabs"><button data-t="u" class="on">Contas</button><button data-t="b">Livros</button><button data-t="t">Ensinar</button></div>
+ <div id="pu"></div>
+ <div id="pb" class="hide"><div class="row"><input type="file" id="pdf" accept="application/pdf" style="flex:1;width:auto"><button class="p" id="up">Enviar PDF</button></div><div id="bl"></div></div>
+ <div id="pt" class="hide"><div class="row"><select id="tk2" style="width:auto"><option value="rule">Regra</option><option value="correction">Correção</option><option value="example">Exemplo</option></select><textarea id="tt" rows="2" placeholder="Ensine algo à IA..." style="flex:1"></textarea><button class="p" id="ta">Salvar</button></div><div id="tl"></div></div>
+</div></section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const sb=supabase.createClient("https://twxqadcpgichcuazqyrm.supabase.co","sb_publishable_s6xHUK1gxPlGkWqpMDuFGg_n0aN0LJx");
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let me=null,conv=null,busy=false;
+
+function md(t){let h=esc(t);
+ h=h.replace(/```(?:\w+)?\n?([\s\S]*?)```/g,(_,c)=>"<pre>"+c+"</pre>");
+ return h.replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>").replace(/`([^`\n]+)`/g,"<code>$1</code>")}
+function add(role,text,img){const d=document.createElement("div");d.className="m "+(role==="user"?"u":"a");
+ d.innerHTML=role==="user"?esc(text):md(text);$("list").appendChild(d);$("msgs").scrollTop=1e9;if(img)showImg(d,img);return d}
+async function showImg(d,path){const{data}=await sb.storage.from("chat-images").createSignedUrl(path,3600);if(!data)return;
+ const i=document.createElement("img");i.src=data.signedUrl;i.style.cssText="max-width:100%;border-radius:12px;display:block;margin-top:8px";
+ i.onload=()=>{$("msgs").scrollTop=1e9};d.appendChild(i)}
+function empty(){$("list").innerHTML='<div class="empty"><h1>Como posso ajudar hoje?</h1></div>'}
+
+$("login").onclick=()=>authgo(false);$("signup").onclick=()=>authgo(true);
+async function authgo(sign){const e=$("em").value.trim(),p=$("pw").value;$("amsg").textContent="";
+ if(!e||p.length<6){$("amsg").textContent="Informe e-mail e senha (mín. 6).";return}
+ const r=sign?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p});
+ if(r.error){$("amsg").textContent=r.error.message;return}
+ if(sign&&!r.data.session){$("amsg").textContent="Conta criada. Confirme o e-mail e depois entre.";return}
+ start()}
+$("out").onclick=async()=>{await sb.auth.signOut();location.reload()};
+
+async function start(){
+ const{data:{user}}=await sb.auth.getUser();if(!user){return}
+ const{data:p}=await sb.from("profiles").select("*").eq("id",user.id).single();me=p;
+ $("auth").classList.add("hide");$("app").classList.remove("hide");
+ $("who").textContent=p.email;tokens(p.tokens);$("admbtn").classList.toggle("hide",p.role!=="admin");
+ empty();loadConvs()}
+function tokens(n){$("tk").textContent=Number(n).toLocaleString("pt-BR")+" tokens"}
+async function loadConvs(){const{data}=await sb.from("conversations").select("id,title").eq("user_id",me.id).order("created_at",{ascending:false});
+ $("convs").innerHTML="";(data||[]).forEach(c=>{const d=document.createElement("div");d.className="cv"+(c.id===conv?" on":"");d.textContent=c.title;
+  d.onclick=()=>openConv(c.id);$("convs").appendChild(d)})}
+async function openConv(id){conv=id;$("side").classList.remove("open");$("list").innerHTML="";
+ const{data}=await sb.from("messages").select("role,content,image_url").eq("conversation_id",id).order("created_at");
+ (data||[]).forEach(m=>add(m.role,m.content,m.image_url));loadConvs()}
+$("new").onclick=()=>{conv=null;empty();$("side").classList.remove("open");loadConvs()};
+$("menu").onclick=()=>$("side").classList.toggle("open");
+
+let att=null,imgMode=false;
+$("img").onclick=()=>{imgMode=!imgMode;$("img").classList.toggle("p",imgMode);
+ $("txt").placeholder=imgMode?"Descreva a imagem (ou anexe uma foto para editar)":"Pergunte, envie um link ou anexe uma foto"};
+$("clip").onclick=()=>$("fi").click();
+$("fi").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+ try{att=await prep(f);$("chip").textContent="📎 "+f.name+" (toque para remover)";$("chip").classList.remove("hide")}catch(x){att=null;alert(x.message)}};
+$("chip").onclick=()=>{att=null;$("chip").classList.add("hide")};
+function b64(buf){let s="";const b=new Uint8Array(buf);for(let i=0;i<b.length;i+=32768)s+=String.fromCharCode.apply(null,b.subarray(i,i+32768));return btoa(s)}
+async function prep(f){
+ if(f.type==="application/pdf"){if(f.size>6e6)throw new Error("PDF muito grande (máx. ~6 MB).");return{mime:f.type,data:b64(await f.arrayBuffer())}}
+ if(!f.type.startsWith("image/"))throw new Error("Use uma foto ou um PDF.");
+ const bm=await createImageBitmap(f),k=Math.min(1,1600/Math.max(bm.width,bm.height)),c=document.createElement("canvas");
+ c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext("2d").drawImage(bm,0,0,c.width,c.height);
+ return{mime:"image/jpeg",data:c.toDataURL("image/jpeg",.85).split(",")[1]}}
+async function send(){let t=$("txt").value.trim();if(!t&&att)t="Leia e explique este anexo.";if(!t||busy)return;busy=true;$("txt").value="";const a=att;att=null;$("chip").classList.add("hide");
+ if(!conv)$("list").innerHTML="";add("user",t+(a?"\n📎 anexo":""));const im=imgMode;if(im){imgMode=false;$("img").classList.remove("p");$("txt").placeholder="Pergunte, envie um link ou anexe uma foto"}
+ const w=add("assistant",im?"Criando a imagem (pode levar cerca de 1 minuto)...":"Pensando...");
+ const{data,error}=await sb.functions.invoke(im?"image":"chat",{body:im?{prompt:t,conversation_id:conv,attachment:a}:{message:t,conversation_id:conv,attachment:a}});
+ busy=false;
+ if(error){let m="Erro ao falar com a IA.";try{const j=await error.context.json();m=j.error==="sem_tokens"?"Seus tokens acabaram. Peça ao administrador para liberar mais.":(j.error||m)}catch(_){}
+  w.textContent=m;return}
+ if(data.image_path){w.textContent="Aqui está a sua imagem.";showImg(w,data.image_path)}else w.innerHTML=md(data.reply);tokens(data.tokens_left);
+ if(!conv){conv=data.conversation_id;loadConvs()}$("msgs").scrollTop=1e9}
+$("send").onclick=send;
+$("txt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&innerWidth>760){e.preventDefault();send()}});
+
+// ---- admin ----
+$("admbtn").onclick=()=>{$("adm").classList.remove("hide");tab("u")};$("admx").onclick=()=>$("adm").classList.add("hide");
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>tab(b.dataset.t));
+function tab(t){document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+ ["u","b","t"].forEach(k=>$("p"+k).classList.toggle("hide",k!==t));({u:users,b:books,t:teach})[t]()}
+async function users(){const{data}=await sb.from("profiles").select("id,email,role,tokens").order("created_at",{ascending:false});
+ $("pu").innerHTML="";(data||[]).forEach(u=>{const r=document.createElement("div");r.className="row";
+  r.innerHTML=`<b>${esc(u.email)}${u.role==="admin"?" (admin)":""}</b>`;
+  const i=document.createElement("input");i.type="number";i.min="0";i.value=u.tokens;
+  const b=document.createElement("button");b.textContent="Definir";
+  b.onclick=async()=>{const{error}=await sb.rpc("admin_set_tokens",{target_user:u.id,new_amount:Math.max(0,parseInt(i.value)||0)});b.textContent=error?"Erro":"Salvo"};
+  r.append(i,b);$("pu").appendChild(r)})}
+async function books(){const{data}=await sb.from("books").select("id,title,status").order("created_at",{ascending:false});
+ $("bl").innerHTML="";(data||[]).forEach(b=>{const r=document.createElement("div");r.className="row";
+  r.innerHTML=`<b>${esc(b.title)}</b><span class="mu">${esc(b.status)}</span>`;
+  const d=document.createElement("button");d.textContent="Apagar";
+  d.onclick=async()=>{if(confirm("Apagar este livro?")){await sb.from("books").delete().eq("id",b.id);books()}};r.appendChild(d);$("bl").appendChild(r)})}
+$("up").onclick=async()=>{const f=$("pdf").files[0];if(!f)return;$("up").textContent="Enviando...";
+ const path=crypto.randomUUID()+".pdf";
+ const u=await sb.storage.from("books").upload(path,f,{contentType:"application/pdf"});
+ if(u.error){$("up").textContent="Erro";return}
+ const{data:bk}=await sb.from("books").insert({title:f.name,file_path:path,uploaded_by:me.id}).select("id").single();
+ await sb.functions.invoke("ingest-book",{body:{book_id:bk.id}});
+ $("up").textContent="Enviar PDF";$("pdf").value="";books();setTimeout(books,8000);setTimeout(books,20000)};
+async function teach(){const{data}=await sb.from("teachings").select("id,kind,content,active").order("created_at",{ascending:false});
+ $("tl").innerHTML="";(data||[]).forEach(t=>{const r=document.createElement("div");r.className="row";
+  r.innerHTML=`<span class="mu">${esc(t.kind)}</span><b style="font-weight:400">${esc(t.content)}</b>`;
+  const a=document.createElement("button");a.textContent=t.active?"Ativa":"Pausada";
+  a.onclick=async()=>{await sb.from("teachings").update({active:!t.active}).eq("id",t.id);teach()};
+  const d=document.createElement("button");d.textContent="Apagar";
+  d.onclick=async()=>{await sb.from("teachings").delete().eq("id",t.id);teach()};r.append(a,d);$("tl").appendChild(r)})}
+$("ta").onclick=async()=>{const c=$("tt").value.trim();if(!c)return;
+ await sb.from("teachings").insert({kind:$("tk2").value,content:c,created_by:me.id});$("tt").value="";teach()};
+
+sb.auth.getSession().then(({data})=>{if(data.session)start()});
+</script></body></html>
