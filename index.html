@@ -59,6 +59,13 @@ header b{font-family:Georgia,serif;font-size:19px;font-weight:500}
 .bar{position:absolute;top:7px;right:8px;display:flex;gap:6px}
 .bar button{position:static;font-size:12px;padding:3px 10px;border-radius:8px;background:#ffffff1a;border-color:#ffffff30;color:#ecebe4}
 body:not(.adm) .gb{display:none}
+.brand{display:flex;align-items:baseline;gap:8px;padding:4px 6px 8px}.brand b{font-family:Georgia,serif;font-size:24px;font-weight:500}
+.cv{display:flex;align-items:center;gap:4px}.cv .ct{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cx{border:0;background:transparent;padding:2px 6px;opacity:.5;font-size:14px}.cx:hover{opacity:1}
+.m{animation:rise .25s ease}@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.dots{color:var(--mu)}.dots::after{content:"";animation:dt 1.2s steps(4) infinite}@keyframes dt{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+#new{border-radius:12px;padding:10px 14px;font-weight:500}
+#msgs{scroll-behavior:smooth}
 .cp2{display:block;margin-top:6px;font-size:12px;padding:3px 10px;border-radius:8px;background:transparent;color:var(--mu)}
 .empty h1{font-size:32px;margin-bottom:22px}
 .sg{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.sg button{border-radius:999px;padding:9px 16px;background:var(--sf)}
@@ -78,7 +85,7 @@ body:not(.adm) .gb{display:none}
 </div></section>
 
 <section id="app" class="hide">
- <aside id="side"><button class="p" id="new">+ Nova conversa</button><div id="convs"></div>
+ <aside id="side"><div class="brand"><b>Drx</b><span class="mu">IA completa</span></div><button class="p" id="new">+ Nova conversa</button><div id="convs"></div>
   <button id="admbtn" class="hide">Painel admin</button>
   <div class="mu" id="who"></div><button id="out">Sair</button></aside>
  <main><header><button id="menu">☰</button><b>Drx</b><span class="sp"></span><span class="mu" id="tk"></span></header>
@@ -116,7 +123,7 @@ body:not(.adm) .gb{display:none}
 const sb=supabase.createClient("https://twxqadcpgichcuazqyrm.supabase.co","sb_publishable_s6xHUK1gxPlGkWqpMDuFGg_n0aN0LJx");
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let me=null,conv=null,busy=false;
+let me=null,conv=null,view=0;const pend=new Set(),unread=new Set();
 
 const EXT={html:"html",js:"js",javascript:"js",ts:"ts",typescript:"ts",tsx:"tsx",jsx:"jsx",python:"py",py:"py",css:"css",json:"json",sql:"sql",bash:"sh",sh:"sh",shell:"sh",java:"java",cs:"cs",csharp:"cs",cpp:"cpp",c:"c",gdscript:"gd",gd:"gd",lua:"lua",yaml:"yml",yml:"yml",md:"md",markdown:"md",kotlin:"kt",swift:"swift",php:"php",go:"go",rust:"rs",rs:"rs",xml:"xml",dart:"dart",ruby:"rb",txt:"txt"};
 async function dl(name,text){name=name.split("/").pop();const f=new File([text],name,{type:"text/plain"});
@@ -166,12 +173,19 @@ async function start(){
  empty();loadConvs()}
 function tokens(n){$("tk").textContent=Number(n).toLocaleString("pt-BR")+" tokens"}
 async function loadConvs(){const{data}=await sb.from("conversations").select("id,title").eq("user_id",me.id).order("created_at",{ascending:false});
- $("convs").innerHTML="";(data||[]).forEach(c=>{const d=document.createElement("div");d.className="cv"+(c.id===conv?" on":"");d.textContent=c.title;
+ $("convs").innerHTML="";(data||[]).forEach(c=>{const d=document.createElement("div");d.className="cv"+(c.id===conv?" on":"");
+  const t=document.createElement("span");t.className="ct";t.textContent=(unread.has(c.id)?"● ":"")+c.title;d.appendChild(t);
+  const x=document.createElement("button");x.className="cx";x.textContent="🗑";x.title="Apagar conversa";x.onclick=e=>{e.stopPropagation();delConv(c.id,c.title)};d.appendChild(x);
   d.onclick=()=>openConv(c.id);$("convs").appendChild(d)})}
-async function openConv(id){conv=id;$("side").classList.remove("open");$("list").innerHTML="";
+async function delConv(id,title){if(!confirm('Apagar a conversa "'+title+'"? Isso não pode ser desfeito.'))return;
+ const{data:im}=await sb.from("messages").select("image_url").eq("conversation_id",id).not("image_url","is",null);
+ const paths=(im||[]).map(m=>m.image_url);if(paths.length)await sb.storage.from("chat-images").remove(paths);
+ const{error}=await sb.from("conversations").delete().eq("id",id);if(error){alert("Não consegui apagar: "+error.message);return}
+ unread.delete(id);if(conv===id){conv=null;view++;empty()}loadConvs()}
+async function openConv(id){conv=id;view++;unread.delete(id);$("side").classList.remove("open");$("list").innerHTML="";
  const{data}=await sb.from("messages").select("role,content,image_url").eq("conversation_id",id).order("created_at");
  (data||[]).forEach(m=>add(m.role,m.content,m.image_url));loadConvs()}
-$("new").onclick=()=>{conv=null;empty();$("side").classList.remove("open");loadConvs()};
+$("new").onclick=()=>{conv=null;view++;empty();$("side").classList.remove("open");loadConvs()};
 $("menu").onclick=()=>$("side").classList.toggle("open");
 
 let att=null,imgMode=false;
@@ -188,15 +202,39 @@ async function prep(f){
  const bm=await createImageBitmap(f),k=Math.min(1,1600/Math.max(bm.width,bm.height)),c=document.createElement("canvas");
  c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext("2d").drawImage(bm,0,0,c.width,c.height);
  return{mime:"image/jpeg",data:c.toDataURL("image/jpeg",.85).split(",")[1]}}
-async function send(){let t=$("txt").value.trim();if(!t&&att)t="Leia e explique este anexo.";if(!t||busy)return;busy=true;$("txt").value="";const a=att;att=null;$("chip").classList.add("hide");
- if(!conv)$("list").innerHTML="";add("user",t+(a?"\n📎 anexo":""));const im=imgMode;if(im){imgMode=false;$("img").classList.remove("p");$("txt").placeholder="Pergunte, envie um link ou anexe uma foto"}
- const w=add("assistant",im?"Criando a imagem (pode levar cerca de 1 minuto)...":"Pensando...",null,true);
- const{data,error}=await sb.functions.invoke(im?"image":"chat",{body:im?{prompt:t,conversation_id:conv,attachment:a}:{message:t,conversation_id:conv,attachment:a}});
- busy=false;
- if(error){let m="Erro ao falar com a IA.";try{const j=await error.context.json();m=j.error==="sem_tokens"?"Seus tokens acabaram. Peça ao administrador para liberar mais.":(j.error||m)}catch(_){}
-  w.textContent=m;return}
- if(data.image_path){w.textContent="Aqui está a sua imagem.";showImg(w,data.image_path)}else reply(w,data.reply);tokens(data.tokens_left);
- if(!conv){conv=data.conversation_id;loadConvs()}$("msgs").scrollTop=1e9}
+async function recover(cid,t0){
+ for(let i=0;i<16;i++){await new Promise(r=>setTimeout(r,5000));
+  let id=cid;
+  if(!id){const{data:c}=await sb.from("conversations").select("id").eq("user_id",me.id).gte("created_at",new Date(t0-5000).toISOString()).order("created_at",{ascending:false}).limit(1);id=c&&c[0]&&c[0].id}
+  if(!id)continue;
+  const{data:m}=await sb.from("messages").select("content,image_url").eq("conversation_id",id).eq("role","assistant").gte("created_at",new Date(t0).toISOString()).order("created_at",{ascending:false}).limit(1);
+  if(m&&m[0])return{id,m:m[0]}}
+ return null}
+function finish(id,data,my,v,w){
+ if(v===view){w.classList.remove("dots");if(data.image_path){w.textContent="Aqui está a sua imagem.";showImg(w,data.image_path)}else reply(w,data.reply);if(!my)conv=id;$("msgs").scrollTop=1e9}
+ else unread.add(id);
+ loadConvs()}
+async function send(){let t=$("txt").value.trim();if(!t&&att)t="Leia e explique este anexo.";if(!t)return;
+ const my=conv,key=my||"new",v=view;if(pend.has(key))return;pend.add(key);
+ $("txt").value="";const a=att;att=null;$("chip").classList.add("hide");
+ if(!my)$("list").innerHTML="";add("user",t+(a?"\n📎 anexo":""));
+ const im=imgMode;if(im){imgMode=false;$("img").classList.remove("p");$("txt").placeholder="Pergunte, envie um link ou anexe uma foto"}
+ const w=add("assistant",im?"Criando a imagem":"Pensando",null,true);w.classList.add("dots");
+ const t0=Date.now();let data=null,error=null,net=false;
+ try{const r=await sb.functions.invoke(im?"image":"chat",{body:im?{prompt:t,conversation_id:my,attachment:a}:{message:t,conversation_id:my,attachment:a}});data=r.data;error=r.error}catch(e){net=true}
+ if(error&&error.name==="FunctionsFetchError")net=true;
+ if(net){ // a conexão caiu (ex.: você saiu do app): o servidor continua e salva a resposta, então confere
+  if(v===view){w.classList.remove("dots");w.textContent="Conexão interrompida. Verificando se a resposta foi salva..."}
+  const rec=await recover(my,t0);pend.delete(key);
+  if(rec)finish(rec.id,{reply:rec.m.content,image_path:rec.m.image_url},my,v,w);
+  else{if(v===view)w.textContent="Não consegui confirmar a resposta. Abra a conversa de novo em instantes.";loadConvs()}
+  return}
+ pend.delete(key);
+ if(error){if(v===view){let m="Erro ao falar com a IA.";try{const j=await error.context.json();m=j.error==="sem_tokens"?"Seus tokens acabaram. Peça ao administrador para liberar mais.":(j.error||m)}catch(_){}
+   w.classList.remove("dots");w.textContent=m}return}
+ if(data&&data.tokens_left!=null)tokens(data.tokens_left);
+ finish(data.conversation_id,data,my,v,w)}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&me)loadConvs()});
 $("send").onclick=send;
 $("txt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&innerWidth>760){e.preventDefault();send()}});
 
